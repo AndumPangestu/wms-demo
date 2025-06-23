@@ -1,0 +1,325 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  username String @unique @db.VarChar(100)
+  name     String @db.VarChar(100)
+  password String @db.VarChar(100)
+
+  @@map("users")
+}
+
+model MachineArea {
+  id   Int    @id @default(autoincrement())
+  name String @unique @db.VarChar(100)
+
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+  kanban     Kanban[]
+  stock_out  StockOut[]
+
+  @@map("machine_areas")
+}
+
+model Operator {
+  id   Int    @id @default(autoincrement())
+  nik  String @unique @db.VarChar(100)
+  name String @db.VarChar(100)
+
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+  stock_in   StockIn[]
+  stock_out  StockOut[]
+
+  @@map("operators")
+}
+
+model Rack {
+  id     Int      @id @default(autoincrement())
+  code   String   @unique @db.VarChar(100)
+  kanban Kanban[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("racks")
+}
+
+model Supplier {
+  id     Int      @id @default(autoincrement())
+  name   String   @unique @db.VarChar(100)
+  kanban Kanban[]
+
+  created_at    DateTime        @default(now())
+  updated_at    DateTime        @updatedAt
+  PurchaseOrder PurchaseOrder[]
+
+  @@map("suppliers")
+}
+
+model Maker {
+  id   Int    @id @default(autoincrement())
+  name String @unique @db.VarChar(100)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  Kanban     Kanban[]
+
+  @@map("makers")
+}
+
+model PurchaseRequest {
+  id Int @id @default(autoincrement())
+
+  date               DateTime?
+  pr_number          String?   @unique
+  department         String?
+  budget_number      String?
+  fixed_asset_number String?
+  type               String?
+  transportation     String?
+  kind_of_request    String?
+  requested          String?
+  gen_manager        String?
+  supervisor         String?
+
+  created_at              DateTime                @default(now())
+  updated_at              DateTime                @updatedAt
+  purchase_request_detail PurchaseRequestDetail[]
+
+  @@map("purchase_requests")
+}
+
+model PurchaseRequestDetail {
+  id Int @id @default(autoincrement())
+
+  purchase_request PurchaseRequest? @relation(fields: [pr_number], references: [pr_number], onDelete: Cascade)
+  pr_number        String?
+
+  acc                  String?
+  kanban               Kanban?   @relation(fields: [kanban_code], references: [code], onDelete: SetNull)
+  kanban_code          String?
+  item_name            String?
+  description_of_goods String?
+  specification        String?
+  part                 String?
+  quantity             Int?
+  unit                 String?
+  est_unit_price       Float?
+  est_amount           Float?
+  currency             String?
+  req_delivery         DateTime?
+  supplier             String?
+  remark               String?
+  purpose              String?
+  is_active            Boolean?  @default(true)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("purchase_request_details")
+}
+
+model PurchaseOrder {
+  id          Int       @id @default(autoincrement())
+  department  String?
+  supplier    Supplier? @relation(fields: [supplier_id], references: [id], onDelete: SetNull)
+  supplier_id Int?
+  po_number   String    @unique
+  po_date     DateTime?
+  pr_date     DateTime?
+
+  created_at            DateTime              @default(now())
+  updated_at            DateTime              @updatedAt
+  purchase_order_detail PurchaseOrderDetail[]
+  StockOrderKanban      StockOrderKanban[]
+
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderDetail {
+  id Int @id @default(autoincrement())
+
+  purchase_order PurchaseOrder? @relation(fields: [po_number], references: [po_number], onDelete: Cascade)
+  po_number      String
+
+  pr_number     String?
+  pr_requested  String?
+  kanban        Kanban?  @relation(fields: [kanban_code], references: [code], onDelete: SetNull)
+  kanban_code   String?
+  description   String?
+  specification String?
+  quantity      Int?
+  unit          String?
+  remark        String?
+  status        String?
+  is_active     Boolean? @default(true)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("purchase_order_details")
+}
+
+model Machine {
+  id   Int    @id @default(autoincrement())
+  code String @unique @db.VarChar(100)
+
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+  kanban     Kanban[]
+  stock_out  StockOut[]
+
+  @@map("machines")
+}
+
+model Kanban {
+  id                   Int          @id @default(autoincrement())
+  code                 String       @unique @db.VarChar(100)
+  description          String?      @db.VarChar(255)
+  specification        String?      @db.VarChar(255)
+  min_quantity         Int?
+  max_quantity         Int?
+  uom                  String?      @db.VarChar(10)
+  lead_time            Int?
+  rack                 Rack?        @relation(fields: [rack_id], references: [id], onDelete: SetNull)
+  rack_id              Int?
+  machine_area         MachineArea? @relation(fields: [machine_area_id], references: [id], onDelete: SetNull)
+  machine_area_id      Int?
+  machine              Machine?     @relation(fields: [machine_id], references: [id], onDelete: SetNull)
+  machine_id           Int?
+  stock_in_quantity    Int          @default(0)
+  balance              Int          @default(0)
+  js_ending_quantity   Int          @default(0)
+  safety_stock         Int?
+  currency             String?      @db.VarChar(10)
+  price                Int?
+  rank                 String?      @db.VarChar(5)
+  order_point          Int?
+  maker                Maker?       @relation(fields: [maker_id], references: [id], onDelete: SetNull)
+  maker_id             Int?
+  incoming_order_stock Int          @default(0)
+
+  created_at              DateTime                @default(now())
+  updated_at              DateTime                @updatedAt
+  stock_in                StockIn[]
+  stock_out               StockOut[]
+  receiving_report        ReceivingReport[]
+  supplier                Supplier[]
+  purchase_request_detail PurchaseRequestDetail[]
+  purchase_order_detail   PurchaseOrderDetail[]
+  StockOrderKanban        StockOrderKanban[]
+  ProductKanban           ProductKanban[]
+
+  @@map("kanbans")
+}
+
+model StockIn {
+  id             Int       @id @default(autoincrement())
+  kanban         Kanban?   @relation(fields: [kanban_code], references: [code], onDelete: SetNull)
+  kanban_code    String?
+  operator       Operator? @relation(fields: [operator_id], references: [id], onDelete: SetNull)
+  operator_id    Int?
+  quantity       Int
+  balance_before Int
+  balance_after  Int
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("stock_ins")
+}
+
+model StockOut {
+  id                Int          @id @default(autoincrement())
+  kanban            Kanban?      @relation(fields: [kanban_code], references: [code], onDelete: SetNull)
+  kanban_code       String?
+  operator          Operator?    @relation(fields: [operator_id], references: [id], onDelete: SetNull)
+  operator_id       Int?
+  machine           Machine?     @relation(fields: [machine_id], references: [id], onDelete: SetNull)
+  machine_id        Int?
+  machine_area      MachineArea? @relation(fields: [machine_area_id], references: [id], onDelete: SetNull)
+  machine_area_id   Int?
+  quantity          Int
+  original_quantity Int
+  balance_before    Int
+  balance_after     Int
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("stock_outs")
+}
+
+model ReceivingReport {
+  id                Int     @id @default(autoincrement())
+  Kanban            Kanban? @relation(fields: [kanban_code], references: [code], onDelete: SetNull)
+  kanban_code       String?
+  received_quantity Int     @default(0)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("receiving_reports")
+}
+
+model ProcessedFile {
+  id         Int      @id @default(autoincrement())
+  file_name  String   @unique @db.VarChar(100)
+  type       String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("processed_files")
+}
+
+model StockOrderKanban {
+  id             Int           @id @default(autoincrement())
+  kanban         Kanban        @relation(fields: [kanban_code], references: [code], onDelete: Cascade)
+  kanban_code    String
+  purchase_order PurchaseOrder @relation(fields: [po_number], references: [po_number], onDelete: Cascade)
+  po_number      String
+
+  last_stock Int @default(0)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@unique([kanban_code, po_number], name: "kanban_code_po_number")
+}
+
+model Product {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique @db.VarChar(100)
+  description String?
+
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @updatedAt
+  product_kanbans ProductKanban[]
+}
+
+model ProductKanban {
+  id         Int     @id @default(autoincrement())
+  product    Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  product_id Int
+  kanban     Kanban  @relation(fields: [kanban_id], references: [id], onDelete: Cascade)
+  kanban_id  Int
+  quantity   Int
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
