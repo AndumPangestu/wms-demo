@@ -9,6 +9,7 @@ import { SupplierController } from "../controller/supplier-controller";
 import { MakerController } from "../controller/Maker-controller";
 import { MachineController } from "../controller/machine-controller";
 import { ProductController } from "../controller/product-controller";
+import { WorkOrderController } from "../controller/work-order-controller";
 
 export const apiRouter = express.Router();
 apiRouter.use(authMiddleware);
@@ -27,7 +28,10 @@ apiRouter.post("/api/products", ProductController.create);
 apiRouter.put("/api/products/:id", ProductController.update);
 apiRouter.delete("/api/products/:id", ProductController.remove);
 
-
+// Work Order
+apiRouter.post("/api/work-orders", WorkOrderController.create);
+apiRouter.put("/api/work-orders/:id", WorkOrderController.update);
+apiRouter.delete("/api/work-orders/:id", WorkOrderController.remove);
 
 // Machine Area
 apiRouter.post("/api/machine-areas", MachineAreaController.create);

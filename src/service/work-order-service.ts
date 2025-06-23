@@ -1,0 +1,254 @@
+import { WorkOrderResponse, CreateWorkOrderRequest, UpdateWorkOrderRequest, toWorkOrderResponse, SearchWorkOrderRequest, toWorkOrderDetailResponse } from "../model/work-order-model";
+import { Validation } from "../validation/validation";
+import { WorkOrderValidation } from "../validation/work-order-validation";
+import { WorkOrder } from "@prisma/client";
+import { prismaClient } from "../application/database";
+import { logger } from "../application/logging";
+import { ResponseError } from "../error/response-error";
+import { Pageable } from "../model/page";
+
+
+export class WorkOrderService {
+
+    static async generateWorkOrderCode(): Promise<string> {
+        const today = new Date();
+
+        const day = String(today.getDate()).padStart(2, '0'); // 01 - 31
+        const month = String(today.getMonth() + 1).padStart(2, '0'); // 01 - 12 (getMonth() dimulai dari 0)
+        const year = today.getFullYear(); // 2025
+
+        const datePart = `${day}${month}${year}`; // Contoh: 23062025
+
+        // Buat waktu awal dan akhir hari ini untuk filter created_at
+        const startOfDay = new Date(today);
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const endOfDay = new Date(today);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        // Hitung berapa WorkOrder yang sudah ada hari ini
+        const countToday = await prismaClient.workOrder.count({
+            where: {
+                created_at: {
+                    gte: startOfDay,
+                    lte: endOfDay
+                }
+            }
+        });
+
+        const orderNumber = countToday + 1;
+        const orderNumberPart = String(orderNumber).padStart(4, '0'); // 0001, 0002, dst.
+
+        return `${datePart}${orderNumberPart}`; // Contoh: "230620250001"
+    }
+
+
+    static async create(request: CreateWorkOrderRequest): Promise<WorkOrderResponse> {
+        const createRequest = Validation.validate(WorkOrderValidation.CREATE, request);
+
+        const result = await prismaClient.$transaction(async (tx) => {
+
+            const code = await this.generateWorkOrderCode();
+
+            const isCodeExist = await tx.workOrder.findFirst({
+                where: {
+                    code: code
+                }
+            });
+
+            if (isCodeExist) {
+                throw new ResponseError(400, "Code already exists");
+            }
+
+
+
+            // Buat workOrder baru
+            const workOrder = await tx.workOrder.create({
+                data: {
+                    code: code
+                }
+            });
+
+            if (createRequest.work_order_products.length === 0) {
+                throw new ResponseError(400, "Work Order products cannot be empty");
+            }
+
+            // Siapkan data relasi workOrder-kanban
+            const workOrderProductRequest = createRequest.work_order_products.map((workOrderProduct) => ({
+                work_order_id: workOrder.id,
+                product_id: workOrderProduct.product_id,
+                quantity: workOrderProduct.quantity
+            }));
+
+            // Buat relasi workOrder-kanban
+            await tx.workOrderProduct.createMany({
+                data: workOrderProductRequest
+            });
+
+            return workOrder;
+        });
+
+        return toWorkOrderResponse(result);
+    }
+
+
+
+    static async update(id: number, request: UpdateWorkOrderRequest): Promise<WorkOrderResponse> {
+        if (isNaN(id)) {
+            throw new ResponseError(400, "Invalid id");
+        }
+
+        const updateRequest = Validation.validate(WorkOrderValidation.UPDATE, request);
+
+        const updatedWorkOrder = await prismaClient.$transaction(async (tx) => {
+            // 1. Cek apakah produk ada
+            const existingWorkOrder = await tx.workOrder.findUnique({
+                where: { id }
+            });
+
+            if (!existingWorkOrder) {
+                throw new ResponseError(404, "Work Order not found");
+            }
+
+
+
+            // 4. Hapus semua workOrder_kanban lama
+            await tx.workOrderProduct.deleteMany({
+                where: {
+                    work_order_id: id
+                }
+            });
+
+            // 5. Insert ulang workOrder_kanban
+            if (updateRequest.work_order_products.length === 0) {
+                throw new ResponseError(400, "Work Order products cannot be empty");
+            }
+
+            const productData = updateRequest.work_order_products.map((pk) => ({
+                work_order_id: id,
+                product_id: pk.product_id,
+                quantity: pk.quantity
+            }));
+
+            await tx.workOrderProduct.createMany({
+                data: productData
+            });
+
+            return existingWorkOrder;
+        });
+
+        return toWorkOrderResponse(updatedWorkOrder);
+    }
+
+
+
+
+    static async get(request: SearchWorkOrderRequest): Promise<Pageable<WorkOrderResponse>> {
+        const searchRequest = Validation.validate(WorkOrderValidation.SEARCH, request);
+
+
+
+        const filters: any[] = [];
+
+        if (searchRequest.keyword) {
+            filters.push({
+                OR: [
+                    {
+                        code: {
+                            contains: searchRequest.keyword
+
+                        }
+                    },
+                ]
+            });
+        }
+
+        const whereClause = filters.length > 0 ? { AND: filters } : {};
+
+        // Default pagination values if not provided
+        const page = searchRequest.page || 1;
+        const limit = searchRequest.limit || 10;
+
+        const skip = (page - 1) * limit;
+
+        const [workOrders, total] = await Promise.all([
+            prismaClient.workOrder.findMany({
+                where: whereClause,
+                ...(searchRequest.paginate ? { take: limit, skip } : {}),
+            }),
+            prismaClient.workOrder.count({
+                where: whereClause,
+            })
+        ]);
+
+
+
+        const pagination = searchRequest.paginate
+            ? {
+                curr_page: page,
+                total_page: Math.ceil(total / limit),
+                limit: limit,
+                total: total
+            }
+            : undefined;
+
+
+        return {
+            data: workOrders.map(toWorkOrderResponse),
+            ...(pagination ? { pagination } : {})
+
+        };
+    }
+
+
+    static async show(id: number) {
+
+        if (isNaN(id)) {
+            throw new ResponseError(400, "Invalid id");
+        }
+
+        const workOrder = await prismaClient.workOrder.findUnique({
+            where: {
+                id: id
+            },
+            include: {
+                work_order_products: true
+            }
+        });
+
+        if (!workOrder) {
+            throw new ResponseError(404, "Work Order not found");
+        }
+
+        return toWorkOrderDetailResponse(workOrder);
+    }
+
+
+
+    static async remove(id: number) {
+
+        if (isNaN(id)) {
+            throw new ResponseError(400, "Invalid id");
+        }
+
+        const idISValid = await prismaClient.workOrder.findUnique({
+            where: {
+                id: id
+            }
+        });
+
+        if (!idISValid) {
+            throw new ResponseError(404, "Work Order not found");
+        }
+
+        await prismaClient.workOrder.delete({
+            where: {
+                id: id
+            }
+        });
+    }
+
+
+}
+
+

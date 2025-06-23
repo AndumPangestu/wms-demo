@@ -14,6 +14,7 @@ import { PurchaseOrderController } from "../controller/purchase-order-controller
 import { ReminderController } from "../controller/reminder-controller";
 import { MainController } from "../controller/main-controller";
 import { ProductController } from '../controller/product-controller';
+import { WorkOrderController } from "../controller/work-order-controller";
 
 export const publicRouter = express.Router();
 publicRouter.post("/api/auth/login", UserController.login);
@@ -27,6 +28,9 @@ publicRouter.get("/api/stock-ins", StockInController.get);
 publicRouter.get("/api/stock-ins/:id", StockInController.show);
 publicRouter.get("/api/stock-ins/export/excel", StockInController.exportExcel);
 
+// Work Order
+publicRouter.get("/api/work-orders", WorkOrderController.get);
+publicRouter.get("/api/work-orders/:id", WorkOrderController.show);
 
 // Stock Out
 publicRouter.post("/api/stock-outs", StockOutController.create);
