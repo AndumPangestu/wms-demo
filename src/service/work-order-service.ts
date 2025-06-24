@@ -78,7 +78,7 @@ export class WorkOrderService {
             const workOrder = await tx.workOrder.create({
                 data: {
                     code: code,
-                    pic_id: userId
+                    ppic_id: userId
                 }
             });
 
@@ -128,7 +128,7 @@ export class WorkOrderService {
                 throw new ResponseError(404, "Work Order not found");
             }
 
-            if (existingWorkOrder.pic_id !== userId) {
+            if (existingWorkOrder.ppic_id !== userId) {
                 throw new ResponseError(403, "Forbidden");
             }
 
@@ -198,6 +198,9 @@ export class WorkOrderService {
                     created_at: 'desc'
                 },
                 ...(searchRequest.paginate ? { take: limit, skip } : {}),
+                include: {
+                    ppic: true
+                }
 
             }),
             prismaClient.workOrder.count({
@@ -248,7 +251,8 @@ export class WorkOrderService {
                             }
                         }
                     }
-                }
+                },
+                ppic: true
             }
         });
 
@@ -281,7 +285,7 @@ export class WorkOrderService {
             throw new ResponseError(404, "Work Order not found");
         }
 
-        if (workerOrder.pic_id !== userId) {
+        if (workerOrder.ppic_id !== userId) {
             throw new ResponseError(403, "Forbidden");
         }
 

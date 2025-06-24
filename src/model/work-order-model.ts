@@ -2,6 +2,8 @@
 export type WorkOrderResponse = {
     id: number;
     code: string;
+    status: string;
+    ppic_name: string;
     created_at: Date;
 }
 
@@ -39,6 +41,8 @@ export function toWorkOrderResponse(WorkOrder: any): WorkOrderResponse {
     return {
         id: WorkOrder.id,
         code: WorkOrder.code,
+        status: WorkOrder.status,
+        ppic_name: WorkOrder.ppic.name,
         created_at: WorkOrder.created_at
     }
 }
@@ -47,10 +51,14 @@ export function toWorkOrderDetailResponse(WorkOrder: any) {
     return {
         id: WorkOrder.id,
         code: WorkOrder.code,
+        status: WorkOrder.status,
+        ppic: {
+            id: WorkOrder.ppic.id,
+            name: WorkOrder.ppic.name
+        },
         created_at: WorkOrder.created_at,
         work_order_products: WorkOrder.work_order_products.map((wop: any) => {
             const productKanbans = wop.product.product_kanbans;
-
             return {
                 id: wop.id,
                 quantity: wop.quantity,
@@ -68,7 +76,6 @@ export function toWorkOrderDetailResponse(WorkOrder: any) {
                         total_quantity: pk.quantity * wop.quantity
 
                     }))
-
                 }
             }
         })

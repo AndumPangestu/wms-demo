@@ -334,10 +334,11 @@ model ProductKanban {
 }
 
 model WorkOrder {
-  id     Int    @id @default(autoincrement())
-  code   String @unique @db.VarChar(100)
-  pic    User?  @relation(fields: [pic_id], references: [id], onDelete: SetNull)
-  pic_id Int?
+  id      Int    @id @default(autoincrement())
+  code    String @unique @db.VarChar(100)
+  ppic    User?  @relation(fields: [ppic_id], references: [id], onDelete: SetNull)
+  ppic_id Int?
+  status  String @default("pending") @db.VarChar(20)
 
   created_at          DateTime           @default(now())
   updated_at          DateTime           @updatedAt
