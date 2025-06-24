@@ -14,8 +14,6 @@ import { JWT_SECRET_KEY } from "../application/config";
 
 export class UserService {
 
-
-
     static async login(request: LoginUserRequest): Promise<UserResponse> {
         const loginRequest = Validation.validate(UserValidation.LOGIN, request);
 
@@ -37,7 +35,7 @@ export class UserService {
 
         const token = jwt.sign(
             {
-                username: user.username,
+                userId: user.id,
             },
             JWT_SECRET_KEY,
             {
@@ -51,10 +49,14 @@ export class UserService {
         return response;
     }
 
-    static async get(username: string): Promise<UserResponse> {
+    static async get(userId: number): Promise<UserResponse> {
+        if (isNaN(userId)) {
+            throw new ResponseError(400, "Invalid id");
+        }
+
         const user = await prismaClient.user.findUnique({
             where: {
-                username: username
+                id: userId
             }
         });
 

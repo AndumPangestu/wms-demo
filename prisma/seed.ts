@@ -18,31 +18,31 @@ async function main() {
             {
                 username: 'admin',
                 name: 'Admin',
-                password: await bcrypt.hash('admin', 10),
-            }
+                role: 'admin',
+                password: await bcrypt.hash('123123', 10),
+            },
+            {
+                username: 'john',
+                name: 'John',
+                role: 'operator',
+                password: await bcrypt.hash('123123', 10),
+            },
+            {
+                username: 'asep',
+                name: 'Asep',
+                role: 'operator',
+                password: await bcrypt.hash('123123', 10),
+            },
+            {
+                username: 'lennon',
+                name: 'Lennon',
+                role: 'pic',
+                password: await bcrypt.hash('123123', 10),
+            },
+
         ],
     });
 
-    await prisma.operator.createMany({
-        data: [
-            {
-                nik: '1808611',
-                name: 'Fahmi',
-            },
-            {
-                nik: '1910802',
-                name: 'Muchlis',
-            },
-            {
-                nik: '1804573',
-                name: 'Fauzi',
-            },
-            {
-                nik: '1711539',
-                name: 'Agung',
-            }
-        ],
-    });
 
     await seedSuppliers();
     await seedMakers();

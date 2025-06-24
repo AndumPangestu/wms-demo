@@ -58,7 +58,8 @@ export class KanbanController {
     static async show(req: Request, res: Response, next: NextFunction) {
         try {
             const identifier = req.params.id;
-            const response = await KanbanService.show(identifier);
+            const isTurnOnLamp = req.query.turn_on_lamp === "true";
+            const response = await KanbanService.show(identifier, isTurnOnLamp);
             logger.info("Kanban is found successfully");
             sendSuccess(res, 200, "Get Kanban success", response);
         } catch (e) {

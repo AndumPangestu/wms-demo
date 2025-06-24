@@ -295,8 +295,6 @@ export class StockInService {
         return buffer;
 
     }
-
-
 }
 
 

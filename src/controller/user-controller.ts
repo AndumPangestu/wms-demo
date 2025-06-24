@@ -18,7 +18,7 @@ export class UserController {
 
     static async get(req: UserRequest, res: Response, next: NextFunction) {
         try {
-            const response = await UserService.get(req.username!);
+            const response = await UserService.get(req.userId!);
             sendSuccess(res, 200, "Get current user success", response);
 
         } catch (e) {

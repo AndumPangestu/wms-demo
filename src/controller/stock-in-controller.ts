@@ -3,13 +3,15 @@ import { CreateStockInRequest, SearchStockInRequest } from "../model/stock-in-mo
 import { StockInService } from "../service/stock-in-service";
 import { sendSuccess } from "../helper/response-helper";
 import { logger } from "../application/logging";
+import { UserRequest } from "../type/user-request";
 
 
 export class StockInController {
 
-    static async create(req: Request, res: Response, next: NextFunction) {
+    static async create(req: UserRequest, res: Response, next: NextFunction) {
         try {
-            const request: CreateStockInRequest = req.body as CreateStockInRequest;
+            const userId = req.userId;
+            const request: CreateStockInRequest = { operator_id: userId, ...req.body } as CreateStockInRequest;
             const response = await StockInService.create(request);
 
             logger.info("Create stockIn success");

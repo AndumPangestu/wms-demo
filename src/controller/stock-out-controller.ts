@@ -3,12 +3,14 @@ import { CreateStockOutRequest, SearchStockOutRequest } from "../model/stock-out
 import { StockOutService } from "../service/stock-out-service";
 import { sendSuccess } from "../helper/response-helper";
 import { logger } from "../application/logging";
+import { UserRequest } from "../type/user-request";
 
 export class StockOutController {
 
-    static async create(req: Request, res: Response, next: NextFunction) {
+    static async create(req: UserRequest, res: Response, next: NextFunction) {
         try {
-            const request: CreateStockOutRequest = req.body as CreateStockOutRequest;
+            const userId = req.userId;
+            const request: CreateStockOutRequest = { operator_id: userId, ...req.body } as CreateStockOutRequest;
             const response = await StockOutService.create(request);
             logger.info("Create stockOut success");
             sendSuccess(res, 200, "Create stockOut success", response);

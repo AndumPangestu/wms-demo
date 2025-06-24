@@ -3,17 +3,19 @@ import { Rack } from "@prisma/client";
 export type RackResponse = {
     id: number;
     code: string;
+    device_id: number | null;
 
 }
 
 export type CreateRackRequest = {
     code: string;
+    device_id: number;
 
 }
 
 export type UpdateRackRequest = {
-
-    code?: string;
+    code: string;
+    device_id: number;
 }
 
 export type SearchRackRequest = {
@@ -26,6 +28,7 @@ export type SearchRackRequest = {
 export function toRackResponse(rack: Rack): RackResponse {
     return {
         id: rack.id,
-        code: rack.code
+        code: rack.code,
+        device_id: rack.device_id
     }
 }

@@ -15,10 +15,14 @@ datasource db {
 }
 
 model User {
-  id       Int    @id @default(autoincrement())
-  username String @unique @db.VarChar(100)
-  name     String @db.VarChar(100)
-  password String @db.VarChar(100)
+  id        Int         @id @default(autoincrement())
+  username  String      @unique @db.VarChar(100)
+  name      String      @db.VarChar(100)
+  password  String      @db.VarChar(100)
+  role      String      @db.VarChar(100)
+  StockIn   StockIn[]
+  StockOut  StockOut[]
+  WorkOrder WorkOrder[]
 
   @@map("users")
 }
@@ -40,18 +44,17 @@ model Operator {
   nik  String @unique @db.VarChar(100)
   name String @db.VarChar(100)
 
-  created_at DateTime   @default(now())
-  updated_at DateTime   @updatedAt
-  stock_in   StockIn[]
-  stock_out  StockOut[]
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   @@map("operators")
 }
 
 model Rack {
-  id     Int      @id @default(autoincrement())
-  code   String   @unique @db.VarChar(100)
-  kanban Kanban[]
+  id        Int      @id @default(autoincrement())
+  code      String   @unique @db.VarChar(100)
+  kanban    Kanban[]
+  device_id Int?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -229,10 +232,10 @@ model Kanban {
 }
 
 model StockIn {
-  id             Int       @id @default(autoincrement())
-  kanban         Kanban?   @relation(fields: [kanban_code], references: [code], onDelete: SetNull)
+  id             Int     @id @default(autoincrement())
+  kanban         Kanban? @relation(fields: [kanban_code], references: [code], onDelete: SetNull)
   kanban_code    String?
-  operator       Operator? @relation(fields: [operator_id], references: [id], onDelete: SetNull)
+  operator       User?   @relation(fields: [operator_id], references: [id], onDelete: SetNull)
   operator_id    Int?
   quantity       Int
   balance_before Int
@@ -248,7 +251,7 @@ model StockOut {
   id                Int          @id @default(autoincrement())
   kanban            Kanban?      @relation(fields: [kanban_code], references: [code], onDelete: SetNull)
   kanban_code       String?
-  operator          Operator?    @relation(fields: [operator_id], references: [id], onDelete: SetNull)
+  operator          User?        @relation(fields: [operator_id], references: [id], onDelete: SetNull)
   operator_id       Int?
   machine           Machine?     @relation(fields: [machine_id], references: [id], onDelete: SetNull)
   machine_id        Int?
@@ -331,8 +334,10 @@ model ProductKanban {
 }
 
 model WorkOrder {
-  id   Int    @id @default(autoincrement())
-  code String @unique @db.VarChar(100)
+  id     Int    @id @default(autoincrement())
+  code   String @unique @db.VarChar(100)
+  pic    User?  @relation(fields: [pic_id], references: [id], onDelete: SetNull)
+  pic_id Int?
 
   created_at          DateTime           @default(now())
   updated_at          DateTime           @updatedAt

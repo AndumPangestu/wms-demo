@@ -43,10 +43,14 @@ export class WorkOrderService {
     }
 
 
-    static async create(request: CreateWorkOrderRequest): Promise<WorkOrderResponse> {
+    static async create(request: CreateWorkOrderRequest, userId: number | undefined): Promise<WorkOrderResponse> {
         const createRequest = Validation.validate(WorkOrderValidation.CREATE, request);
 
         const result = await prismaClient.$transaction(async (tx) => {
+
+            if (!userId || isNaN(userId) || userId === undefined) {
+                throw new ResponseError(400, "User id is required");
+            }
 
             const code = await this.generateWorkOrderCode();
 
@@ -60,12 +64,11 @@ export class WorkOrderService {
                 throw new ResponseError(400, "Code already exists");
             }
 
-
-
             // Buat workOrder baru
             const workOrder = await tx.workOrder.create({
                 data: {
-                    code: code
+                    code: code,
+                    pic_id: userId
                 }
             });
 
@@ -93,7 +96,12 @@ export class WorkOrderService {
 
 
 
-    static async update(id: number, request: UpdateWorkOrderRequest): Promise<WorkOrderResponse> {
+    static async update(id: number, request: UpdateWorkOrderRequest, userId: number | undefined): Promise<WorkOrderResponse> {
+
+        if (!userId || isNaN(userId) || userId === undefined) {
+            throw new ResponseError(401, "Unauthorized");
+        }
+
         if (isNaN(id)) {
             throw new ResponseError(400, "Invalid id");
         }
@@ -110,7 +118,9 @@ export class WorkOrderService {
                 throw new ResponseError(404, "Work Order not found");
             }
 
-
+            if (existingWorkOrder.pic_id !== userId) {
+                throw new ResponseError(403, "Forbidden");
+            }
 
             // 4. Hapus semua workOrder_kanban lama
             await tx.workOrderProduct.deleteMany({
@@ -225,20 +235,28 @@ export class WorkOrderService {
 
 
 
-    static async remove(id: number) {
+    static async remove(id: number, userId: number | undefined) {
+
+        if (!userId || isNaN(userId) || userId === undefined) {
+            throw new ResponseError(401, "Unauthorized");
+        }
 
         if (isNaN(id)) {
             throw new ResponseError(400, "Invalid id");
         }
 
-        const idISValid = await prismaClient.workOrder.findUnique({
+        const workerOrder = await prismaClient.workOrder.findUnique({
             where: {
                 id: id
             }
         });
 
-        if (!idISValid) {
+        if (!workerOrder) {
             throw new ResponseError(404, "Work Order not found");
+        }
+
+        if (workerOrder.pic_id !== userId) {
+            throw new ResponseError(403, "Forbidden");
         }
 
         await prismaClient.workOrder.delete({

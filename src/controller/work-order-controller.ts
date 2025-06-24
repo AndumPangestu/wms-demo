@@ -2,14 +2,16 @@ import { Request, Response, NextFunction } from "express";
 import { CreateWorkOrderRequest, UpdateWorkOrderRequest, SearchWorkOrderRequest } from "../model/work-order-model";
 import { WorkOrderService } from "../service/work-order-service";
 import { sendSuccess } from "../helper/response-helper";
+import { UserRequest } from "../type/user-request";
 
 
 export class WorkOrderController {
 
-    static async create(req: Request, res: Response, next: NextFunction) {
+    static async create(req: UserRequest, res: Response, next: NextFunction) {
         try {
+            const userId = req.userId;
             const request: CreateWorkOrderRequest = req.body as CreateWorkOrderRequest;
-            const response = await WorkOrderService.create(request);
+            const response = await WorkOrderService.create(request, userId);
 
             sendSuccess(res, 200, "Create work order success", response);
 
@@ -18,11 +20,12 @@ export class WorkOrderController {
         }
     }
 
-    static async update(req: Request, res: Response, next: NextFunction) {
+    static async update(req: UserRequest, res: Response, next: NextFunction) {
         try {
             const id: number = Number(req.params.id);
+            const userId = req.userId;
             const request: UpdateWorkOrderRequest = req.body as UpdateWorkOrderRequest;
-            const response = await WorkOrderService.update(id, request);
+            const response = await WorkOrderService.update(id, request, userId);
 
             sendSuccess(res, 200, "Update work order success", response);
         } catch (e) {
@@ -60,10 +63,11 @@ export class WorkOrderController {
         }
     }
 
-    static async remove(req: Request, res: Response, next: NextFunction) {
+    static async remove(req: UserRequest, res: Response, next: NextFunction) {
         try {
             const id: number = Number(req.params.id);
-            await WorkOrderService.remove(id);
+            const userId = req.userId;
+            await WorkOrderService.remove(id, userId);
 
             sendSuccess(res, 200, "Remove work order success");
         } catch (e) {

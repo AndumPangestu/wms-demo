@@ -4,10 +4,12 @@ export class RackValidation {
 
     static readonly CREATE: ZodType = z.object({
         code: z.string().min(1).max(100),
+        device_id: z.number().min(1).positive(),
     });
 
     static readonly UPDATE: ZodType = z.object({
         code: z.string().min(1).max(100),
+        device_id: z.number().min(1).positive(),
 
     });
 

@@ -8,6 +8,7 @@ import { Pageable } from "../model/page";
 import xlsx from 'xlsx';
 import { Workbook, BorderStyle } from "exceljs"
 import path from 'path';
+import { LampService } from "./lamp-service";
 
 
 
@@ -620,7 +621,7 @@ export class KanbanService {
         };
     }
 
-    static async show(identifier: number | string): Promise<KanbanResponse> {
+    static async show(identifier: number | string, isTurnOnLamp: boolean): Promise<KanbanResponse> {
         let kanban;
 
         if (typeof identifier === "number" || (!isNaN(Number(identifier)) && Number(identifier) > 0)) {
@@ -657,6 +658,23 @@ export class KanbanService {
 
         if (!kanban) {
             throw new ResponseError(404, "Kanban not found");
+        }
+
+
+        if (isTurnOnLamp) {
+            if (kanban.rack_id) {
+                const rack = await prismaClient.rack.findUnique({
+                    where: {
+                        id: kanban.rack_id
+                    }, select: {
+                        device_id: true
+                    }
+                })
+
+                if (rack?.device_id) {
+                    await LampService.turnOnLamp(rack.device_id);
+                }
+            }
         }
 
         return toKanbanResponse(kanban);
@@ -790,7 +808,6 @@ export class KanbanService {
         // await workbook.xlsx.writeFile(path.resolve(__dirname, "../../uncompleted_kanban_export.xlsx"))
         const buffer = await workbook.xlsx.writeBuffer();
         return buffer;
-
     }
 
 

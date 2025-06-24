@@ -21,8 +21,8 @@ export const authMiddleware = async (req: UserRequest, res: Response, next: Next
       return sendError(res, 401, "Unauthorized: Invalid or expired token");
     }
 
-    if (typeof decoded === "object" && "username" in decoded) {
-      req.username = decoded.username;
+    if (typeof decoded === "object" && "userId" in decoded) {
+      req.userId = decoded.userId;
       return next();
     }
 
