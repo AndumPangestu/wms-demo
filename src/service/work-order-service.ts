@@ -79,6 +79,9 @@ export class WorkOrderService {
                 data: {
                     code: code,
                     ppic_id: userId
+                },
+                include: {
+                    ppic: true
                 }
             });
 
@@ -121,7 +124,10 @@ export class WorkOrderService {
         const updatedWorkOrder = await prismaClient.$transaction(async (tx) => {
             // 1. Cek apakah produk ada
             const existingWorkOrder = await tx.workOrder.findUnique({
-                where: { id }
+                where: { id },
+                include: {
+                    ppic: true
+                }
             });
 
             if (!existingWorkOrder) {
