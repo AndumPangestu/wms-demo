@@ -43,11 +43,34 @@ export function toWorkOrderResponse(WorkOrder: any): WorkOrderResponse {
     }
 }
 
-export function toWorkOrderDetailResponse(WorkOrder: any): WorkOrderDetailResponse {
+export function toWorkOrderDetailResponse(WorkOrder: any) {
     return {
         id: WorkOrder.id,
         code: WorkOrder.code,
-        work_order_products: WorkOrder.work_order_products,
-        created_at: WorkOrder.created_at
-    }
+        created_at: WorkOrder.created_at,
+        work_order_products: WorkOrder.work_order_products.map((wop: any) => {
+            const productKanbans = wop.product.product_kanbans;
+
+            return {
+                id: wop.id,
+                quantity: wop.quantity,
+                product: {
+                    id: wop.product.id,
+                    name: wop.product.name,
+                    description: wop.product.description,
+                    product_kanbans: productKanbans.map((pk: any) => ({
+                        id: pk.id,
+                        kanban_id: pk.kanban_id,
+                        kanban_code: pk.kanban.code,
+                        kanban_description: pk.kanban.description,
+                        kanban_specification: pk.kanban.specification,
+                        quantity: pk.quantity,
+                        total_quantity: pk.quantity * wop.quantity
+
+                    }))
+
+                }
+            }
+        })
+    };
 }

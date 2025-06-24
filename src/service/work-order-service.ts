@@ -184,7 +184,11 @@ export class WorkOrderService {
         const [workOrders, total] = await Promise.all([
             prismaClient.workOrder.findMany({
                 where: whereClause,
+                orderBy: {
+                    created_at: 'desc'
+                },
                 ...(searchRequest.paginate ? { take: limit, skip } : {}),
+
             }),
             prismaClient.workOrder.count({
                 where: whereClause,
@@ -222,7 +226,19 @@ export class WorkOrderService {
                 id: id
             },
             include: {
-                work_order_products: true
+                work_order_products: {
+                    include: {
+                        product: {
+                            include: {
+                                product_kanbans: {
+                                    include: {
+                                        kanban: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         });
 

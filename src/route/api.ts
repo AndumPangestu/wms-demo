@@ -10,6 +10,8 @@ import { MakerController } from "../controller/Maker-controller";
 import { MachineController } from "../controller/machine-controller";
 import { ProductController } from "../controller/product-controller";
 import { WorkOrderController } from "../controller/work-order-controller";
+import { StockInController } from "../controller/stock-in-controller";
+import { StockOutController } from "../controller/stock-out-controller";
 
 export const apiRouter = express.Router();
 apiRouter.use(authMiddleware);
@@ -17,6 +19,13 @@ apiRouter.use(authMiddleware);
 // User APi
 apiRouter.get("/api/users/current", UserController.get);
 // apiRouter.patch("/api/users/current", UserController.update);
+
+// Stock In
+apiRouter.post("/api/stock-ins", StockInController.create);
+
+// Stock Out
+apiRouter.post("/api/stock-outs", StockOutController.create);
+apiRouter.patch("/api/stock-outs/:id", StockOutController.update);
 
 // Operator
 apiRouter.post("/api/operators", OperatorController.create);

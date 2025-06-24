@@ -23,7 +23,6 @@ publicRouter.post("/api/auth/login", UserController.login);
 publicRouter.get("/api/statistics", MainController.get);
 
 // Stock In
-publicRouter.post("/api/stock-ins", StockInController.create);
 publicRouter.get("/api/stock-ins", StockInController.get);
 publicRouter.get("/api/stock-ins/:id", StockInController.show);
 publicRouter.get("/api/stock-ins/export/excel", StockInController.exportExcel);
@@ -33,9 +32,7 @@ publicRouter.get("/api/work-orders", WorkOrderController.get);
 publicRouter.get("/api/work-orders/:id", WorkOrderController.show);
 
 // Stock Out
-publicRouter.post("/api/stock-outs", StockOutController.create);
 publicRouter.get("/api/stock-outs", StockOutController.get);
-publicRouter.patch("/api/stock-outs/:id", StockOutController.update);
 publicRouter.get("/api/stock-outs/:id", StockOutController.show);
 publicRouter.get("/api/stock-outs/export/excel", StockOutController.exportExcel);
 
