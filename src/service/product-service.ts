@@ -157,6 +157,9 @@ export class ProductService {
         const [products, total] = await Promise.all([
             prismaClient.product.findMany({
                 where: whereClause,
+                orderBy: {
+                    created_at: "desc"
+                },
                 ...(searchRequest.paginate ? { take: limit, skip } : {}),
             }),
             prismaClient.product.count({

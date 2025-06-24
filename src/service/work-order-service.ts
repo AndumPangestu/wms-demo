@@ -13,31 +13,41 @@ export class WorkOrderService {
     static async generateWorkOrderCode(): Promise<string> {
         const today = new Date();
 
-        const day = String(today.getDate()).padStart(2, '0'); // 01 - 31
-        const month = String(today.getMonth() + 1).padStart(2, '0'); // 01 - 12 (getMonth() dimulai dari 0)
-        const year = today.getFullYear(); // 2025
+        const day = String(today.getDate()).padStart(2, '0');
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const year = today.getFullYear();
 
-        const datePart = `${day}${month}${year}`; // Contoh: 23062025
+        const datePart = `${day}${month}${year}`;
 
-        // Buat waktu awal dan akhir hari ini untuk filter created_at
         const startOfDay = new Date(today);
         startOfDay.setHours(0, 0, 0, 0);
 
         const endOfDay = new Date(today);
         endOfDay.setHours(23, 59, 59, 999);
 
-        // Hitung berapa WorkOrder yang sudah ada hari ini
-        const countToday = await prismaClient.workOrder.count({
+        // Ambil WorkOrder terakhir berdasarkan created_at hari ini
+        const lastWorkOrderToday = await prismaClient.workOrder.findFirst({
             where: {
                 created_at: {
                     gte: startOfDay,
-                    lte: endOfDay
-                }
-            }
+                    lte: endOfDay,
+                },
+            },
+            orderBy: {
+                code: 'desc', // Mengurutkan berdasarkan kode paling akhir
+            },
         });
 
-        const orderNumber = countToday + 1;
-        const orderNumberPart = String(orderNumber).padStart(4, '0'); // 0001, 0002, dst.
+        let orderNumber = 1;
+
+        if (lastWorkOrderToday?.code) {
+            const lastCode = lastWorkOrderToday.code;
+            const lastNumberStr = lastCode.slice(-4); // Ambil 4 digit terakhir
+            const lastNumber = parseInt(lastNumberStr, 10);
+            orderNumber = lastNumber + 1;
+        }
+
+        const orderNumberPart = String(orderNumber).padStart(4, '0');
 
         return `${datePart}${orderNumberPart}`; // Contoh: "230620250001"
     }
