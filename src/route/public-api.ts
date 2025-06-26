@@ -30,6 +30,7 @@ publicRouter.get("/api/stock-ins/export/excel", StockInController.exportExcel);
 // Work Order
 publicRouter.get("/api/work-orders", WorkOrderController.get);
 publicRouter.get("/api/work-orders/:id", WorkOrderController.show);
+publicRouter.post("/api/work-orders/webhook", WorkOrderController.webhookWorkOrderProcess);
 
 // Stock Out
 publicRouter.get("/api/stock-outs", StockOutController.get);

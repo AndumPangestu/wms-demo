@@ -41,6 +41,8 @@ apiRouter.delete("/api/products/:id", ProductController.remove);
 apiRouter.post("/api/work-orders", WorkOrderController.create);
 apiRouter.put("/api/work-orders/:id", WorkOrderController.update);
 apiRouter.delete("/api/work-orders/:id", WorkOrderController.remove);
+apiRouter.post("/api/work-orders/:id/start", WorkOrderController.startWorkOrderProcess);
+apiRouter.patch("/api/work-orders/:id/status", WorkOrderController.updateStatus);
 
 // Machine Area
 apiRouter.post("/api/machine-areas", MachineAreaController.create);

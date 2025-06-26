@@ -74,4 +74,36 @@ export class WorkOrderController {
             next(e);
         }
     }
+
+    static async webhookWorkOrderProcess(req: Request, res: Response, next: NextFunction) {
+        try {
+            const response = await WorkOrderService.webhookWorkOrderProcess(req.body);
+            sendSuccess(res, 200, "Webhook work order success", response);
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    static async startWorkOrderProcess(req: Request, res: Response, next: NextFunction) {
+        try {
+            const id: number = Number(req.params.id);
+            const response = await WorkOrderService.startWorkOrderProcess(id);
+            sendSuccess(res, 200, "Start work order process success", response);
+        } catch (e) {
+            next(e);
+        }
+    }
+
+
+    static async updateStatus(req: UserRequest, res: Response, next: NextFunction) {
+        try {
+            const id: number = Number(req.params.id);
+            const userId = req.userId;
+            const status = req.body.status;
+            const response = await WorkOrderService.updateStatus(id, status, userId);
+            sendSuccess(res, 200, "Update work order status success", response);
+        } catch (e) {
+            next(e);
+        }
+    }
 }

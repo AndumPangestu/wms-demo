@@ -1,4 +1,4 @@
-import { WorkOrderResponse, CreateWorkOrderRequest, UpdateWorkOrderRequest, toWorkOrderResponse, SearchWorkOrderRequest, toWorkOrderDetailResponse } from "../model/work-order-model";
+import { WorkOrderResponse, CreateWorkOrderRequest, UpdateWorkOrderRequest, toWorkOrderResponse, SearchWorkOrderRequest, toWorkOrderDetailResponse, toWorkOrderProcessRequest } from "../model/work-order-model";
 import { Validation } from "../validation/validation";
 import { WorkOrderValidation } from "../validation/work-order-validation";
 import { WorkOrder } from "@prisma/client";
@@ -6,6 +6,8 @@ import { prismaClient } from "../application/database";
 import { logger } from "../application/logging";
 import { ResponseError } from "../error/response-error";
 import { Pageable } from "../model/page";
+import { WebhookRequest } from "../model/webhook-model";
+import { WorkOrderProcessService } from "./work-order-process-service";
 
 
 export class WorkOrderService {
@@ -269,6 +271,92 @@ export class WorkOrderService {
         return toWorkOrderDetailResponse(workOrder);
     }
 
+    static async startWorkOrderProcess(id: number) {
+
+        const workOrder = await prismaClient.workOrder.findUnique({
+            where: { id },
+            select: {
+                code: true,                                // → Work-order code
+                work_order_products: {
+                    select: {
+                        product: {
+                            select: {
+                                id: true,
+                                name: true,
+                                product_kanbans: {
+                                    select: {
+                                        kanban: {
+                                            select: {
+                                                id: true,
+                                                code: true,
+                                                rack: {
+                                                    select: {
+                                                        device_id: true,       // ganti dengan nama kolom di DB
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        if (!workOrder) {
+            throw new ResponseError(404, "Work Order not found");
+        }
+
+
+        const workOrderProcessRequest = toWorkOrderProcessRequest(workOrder);
+
+        WorkOrderProcessService.instance.startProcessingWorkOrder(workOrderProcessRequest);
+
+    }
+
+    static async updateStatus(id: number, status: string, userId: number | undefined) {
+
+        if (!status) {
+            throw new ResponseError(400, "Status cannot be empty");
+        }
+
+        if (!userId || isNaN(userId) || userId === undefined) {
+            throw new ResponseError(401, "Unauthorized");
+        }
+
+        if (isNaN(id)) {
+            throw new ResponseError(400, "Invalid id");
+        }
+
+        const workerOrder = await prismaClient.workOrder.findUnique({
+            where: {
+                id: id
+            }
+        });
+
+        if (!workerOrder) {
+            throw new ResponseError(404, "Work Order not found");
+        }
+
+        if (workerOrder.ppic_id !== userId) {
+            throw new ResponseError(403, "Forbidden");
+        }
+
+        const updatedWorkOrder = await prismaClient.workOrder.update({
+            where: {
+                id: id
+            },
+            data: {
+                status: status
+            }
+        });
+
+        return toWorkOrderResponse(updatedWorkOrder);
+
+    }
+
 
 
     static async remove(id: number, userId: number | undefined) {
@@ -301,6 +389,12 @@ export class WorkOrderService {
             }
         });
     }
+
+
+    static async webhookWorkOrderProcess(req: WebhookRequest) {
+        await WorkOrderProcessService.instance.webhookWorkOrderProcess(req);
+    }
+
 
 
 }

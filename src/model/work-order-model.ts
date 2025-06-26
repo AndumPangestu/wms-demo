@@ -7,13 +7,6 @@ export type WorkOrderResponse = {
     created_at: Date;
 }
 
-export type WorkOrderDetailResponse = {
-    id: number;
-    code: string;
-    work_order_products: WorkOrderProduct[];
-    created_at: Date;
-}
-
 type WorkOrderProduct = {
     product_id: number;
     quantity: number;
@@ -36,6 +29,26 @@ export type SearchWorkOrderRequest = {
     paginate?: boolean;
 }
 
+type ProductKanban = {
+    id: number;
+    kanban_code: string;
+    kanban_rack_device_id: number | null;
+}
+
+export type Product = {
+    id: number;
+    name: string;
+    product_kanbans: ProductKanban[];
+}
+
+
+export type WorkOrderProcessRequest = {
+    code: string;
+    products: Product[];
+}
+
+
+
 
 export function toWorkOrderResponse(WorkOrder: any): WorkOrderResponse {
     return {
@@ -45,6 +58,36 @@ export function toWorkOrderResponse(WorkOrder: any): WorkOrderResponse {
         ppic_name: WorkOrder.ppic.name,
         created_at: WorkOrder.created_at
     }
+}
+
+export function toWorkOrderProcessRequest(wo: {
+    code: string;
+    work_order_products: {
+        product: {
+            id: number;
+            name: string;
+            product_kanbans: {
+                kanban: {
+                    id: number;
+                    code: string;
+                    rack: { device_id: number | null } | null;
+                };
+            }[];
+        };
+    }[];
+}): WorkOrderProcessRequest {
+    return {
+        code: wo.code,
+        products: wo.work_order_products.map(({ product }) => ({
+            id: product.id,
+            name: product.name,
+            product_kanbans: product.product_kanbans.map(({ kanban }) => ({
+                id: kanban.id,
+                kanban_code: kanban.code,
+                kanban_rack_device_id: kanban.rack?.device_id!, // ← sesuaikan jika null diizinkan
+            })),
+        })),
+    };
 }
 
 export function toWorkOrderDetailResponse(WorkOrder: any) {

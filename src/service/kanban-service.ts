@@ -660,7 +660,6 @@ export class KanbanService {
             throw new ResponseError(404, "Kanban not found");
         }
 
-
         if (isTurnOnLamp) {
             if (kanban.rack_id) {
                 const rack = await prismaClient.rack.findUnique({
