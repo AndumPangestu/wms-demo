@@ -20,7 +20,7 @@ export class StockOutService {
         return await prismaClient.$transaction(async (prisma) => {
 
 
-            const isOperatorExist = await prisma.operator.findFirst({
+            const isOperatorExist = await prisma.user.findFirst({
                 where: {
                     id: createRequest.operator_id
                 }

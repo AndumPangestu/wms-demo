@@ -4,7 +4,7 @@ import axios from 'axios';
 
 export class LampService {
 
-    static async turnOnLamp(deviceId: number, color: string = "red") {
+    static async turnOnLamp(deviceId: number, color: string = "blue") {
 
         if (isNaN(deviceId)) {
             throw new ResponseError(400, "Invalid device id");
