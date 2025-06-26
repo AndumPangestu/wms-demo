@@ -7,7 +7,6 @@ export class WorkOrderValidation {
     });
 
     static readonly UPDATE: ZodType = z.object({
-        status: z.string(),
         work_order_products: z.array(z.object({ product_id: z.number(), quantity: z.number() }))
     });
 
