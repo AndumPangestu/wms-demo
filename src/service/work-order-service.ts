@@ -350,6 +350,9 @@ export class WorkOrderService {
             },
             data: {
                 status: status
+            },
+            include: {
+                ppic: true
             }
         });
 
