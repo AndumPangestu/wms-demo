@@ -9,6 +9,7 @@ import { Pageable } from "../model/page";
 import { Workbook } from "exceljs"
 import path from 'path';
 import { convertToReadableDate } from "../helper/readable-date-helper";
+import { LampService } from "./lamp-service";
 
 
 export class StockInService {
@@ -59,7 +60,11 @@ export class StockInService {
                 },
                 include: {
                     operator: true,
-                    kanban: true
+                    kanban: {
+                        include: {
+                            rack: true
+                        }
+                    }
                 }
             });
 
@@ -71,6 +76,10 @@ export class StockInService {
                     incoming_order_stock: { decrement: kanbanData.stock_in_quantity }
                 }
             });
+
+            if (stockIn.kanban?.rack?.device_id) {
+                await LampService.turnOffLamp(stockIn.kanban?.rack?.device_id);
+            }
 
             return toStockInResponse(stockIn);
         }, { timeout: 60000 }
