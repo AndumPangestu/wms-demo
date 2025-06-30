@@ -253,7 +253,15 @@ export class WorkOrderService {
                             include: {
                                 product_kanbans: {
                                     include: {
-                                        kanban: true
+                                        kanban: {
+                                            include: {
+                                                rack: {
+                                                    select: {
+                                                        code: true
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }

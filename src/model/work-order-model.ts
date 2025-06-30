@@ -116,7 +116,8 @@ export function toWorkOrderDetailResponse(WorkOrder: any) {
                         kanban_description: pk.kanban.description,
                         kanban_specification: pk.kanban.specification,
                         quantity: pk.quantity,
-                        total_quantity: pk.quantity * wop.quantity
+                        total_quantity: pk.quantity * wop.quantity,
+                        rack: pk.kanban.rack.code
 
                     }))
                 }

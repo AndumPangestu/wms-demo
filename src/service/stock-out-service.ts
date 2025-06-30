@@ -73,7 +73,7 @@ export class StockOutService {
 
             if (newKanban.min_quantity && newKanban.balance < newKanban.min_quantity) {
                 logger.info(`Kanban ${newKanban.code} stock is less than ${newKanban.min_quantity} ${newKanban.uom}`);
-                sendNotification(`Kanban ${newKanban.code} stock is less than ${newKanban.min_quantity} ${newKanban.uom}`);
+                sendNotification("kanban-reminder", `Kanban ${newKanban.code} stock is less than ${newKanban.min_quantity} ${newKanban.uom}`);
             }
 
 
