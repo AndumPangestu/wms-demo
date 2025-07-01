@@ -4,6 +4,7 @@ import { prismaClient } from "../application/database";
 import { logger } from "../application/logging";
 import { ResponseError } from "../error/response-error";
 import { LampService } from './lamp-service';
+import { sendNotification } from "../application/websocket";
 
 type QueueItem = {
     code: string;
@@ -12,6 +13,8 @@ type QueueItem = {
     currentKanbanIndex: number;
     color: string;
 };
+
+const WS_URL = "ws://localhost:3001";
 
 export class WorkOrderProcessService {
     private static _instance: WorkOrderProcessService;
@@ -33,7 +36,6 @@ export class WorkOrderProcessService {
         if (req.products.length === 0) {
             throw new ResponseError(400, "Products is empty");
         };
-
 
         if (this.colors.length === 0) {
             throw new ResponseError(400, "Processing queue is full");
@@ -60,11 +62,13 @@ export class WorkOrderProcessService {
             }
         })
 
+
         // kick-off pertama
         return this.processWorkOrder(req.code);
     }
 
     private async processWorkOrder(code: string): Promise<void> {
+
         const wo = this.processingQueue.get(code);
         if (!wo) return;
 
@@ -80,6 +84,7 @@ export class WorkOrderProcessService {
                     status: "finished"
                 }
             })
+            sendNotification(code, { status: "finished" });
             return;
         }
 
@@ -110,11 +115,14 @@ export class WorkOrderProcessService {
 
         try {
             await LampService.turnOnLamp(kanban.kanban_rack_device_id, wo.color);
+
         } catch (e) {
             console.error(`Turn-on failed: ${e}`);
             this.activeDevice.delete(kanban.kanban_rack_device_id);
             return;
         }
+
+        sendNotification(wo.code, { productId: product.id, kanbanCode: kanban.kanban_code });
 
         // advance index
         if (++wo.currentKanbanIndex >= product.product_kanbans.length) {

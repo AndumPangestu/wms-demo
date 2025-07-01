@@ -40,7 +40,7 @@ wss.on("error", (err) => {
     logger.error("WebSocket error:", err);
 });
 
-export function sendNotification(topic: string, payload: string) {
+export async function sendNotification(topic: string, payload: any) {
     const message = JSON.stringify({ topic, payload });
 
     wss.clients.forEach((client) => {

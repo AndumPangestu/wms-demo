@@ -8,6 +8,7 @@ import { ResponseError } from "../error/response-error";
 import { Pageable } from "../model/page";
 import { WebhookRequest } from "../model/webhook-model";
 import { WorkOrderProcessService } from "./work-order-process-service";
+import WebSocket from "ws";
 
 
 export class WorkOrderService {
