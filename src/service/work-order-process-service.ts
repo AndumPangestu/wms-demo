@@ -14,8 +14,6 @@ type QueueItem = {
     color: string;
 };
 
-const WS_URL = "ws://localhost:3001";
-
 export class WorkOrderProcessService {
     private static _instance: WorkOrderProcessService;
     static get instance() {

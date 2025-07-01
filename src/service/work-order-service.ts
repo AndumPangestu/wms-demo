@@ -324,7 +324,7 @@ export class WorkOrderService {
 
         const workOrderProcessRequest = toWorkOrderProcessRequest(workOrder);
 
-        WorkOrderProcessService.instance.startProcessingWorkOrder(workOrderProcessRequest);
+        await WorkOrderProcessService.instance.startProcessingWorkOrder(workOrderProcessRequest);
 
     }
 
