@@ -27,6 +27,7 @@ export type SearchWorkOrderRequest = {
     page: number;
     limit: number;
     paginate?: boolean;
+    status?: string;
 }
 
 type ProductKanban = {
@@ -35,6 +36,7 @@ type ProductKanban = {
     kanban_description: string | null;
     total_quantity: number;
     kanban_rack_device_id: number | null;
+    kanban_rack_code: string | null;
 }
 
 export type Product = {
@@ -74,7 +76,7 @@ export function toWorkOrderProcessRequest(wo: {
                     id: number;
                     code: string;
                     description: string | null;
-                    rack: { device_id: number | null } | null;
+                    rack: { device_id: number | null, code: string } | null;
                 };
                 quantity: number; // qty per kanban
             }[];
@@ -94,6 +96,7 @@ export function toWorkOrderProcessRequest(wo: {
                         kanban_description: kanban.description,
                         total_quantity: woProductQty * kanbanQty,
                         kanban_rack_device_id: kanban.rack?.device_id ?? null,
+                        kanban_rack_code: kanban.rack?.code ?? null
                     })
                 ),
             })

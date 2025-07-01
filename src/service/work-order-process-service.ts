@@ -6,6 +6,7 @@ import { ResponseError } from "../error/response-error";
 import { LampService } from './lamp-service';
 import { sendNotification } from "../application/websocket";
 import { PrinterService } from './printer-service';
+import { send } from 'process';
 
 type QueueItem = {
     code: string;
@@ -125,7 +126,7 @@ export class WorkOrderProcessService {
             return;
         }
 
-        sendNotification(wo.code, { productName: product.name, kanbanDescription: kanban.kanban_description, totalQuantity: kanban.total_quantity });
+        sendNotification(wo.code, { productName: product.name, kanbanDescription: kanban.kanban_description, totalQuantity: kanban.total_quantity, rackCode: kanban.kanban_rack_code });
 
         // advance index
         if (++wo.currentKanbanIndex >= product.product_kanbans.length) {
@@ -139,6 +140,7 @@ export class WorkOrderProcessService {
         const deviceId = req.sliD_Activated;
         const code = this.activeDevice.get(deviceId);
         if (!code) {
+            this.processingQueue.forEach(wo => sendNotification(wo.code, { status: "failed" }));
             console.log("Device not found");
             return
         };

@@ -40,7 +40,8 @@ export class WorkOrderController {
                 keyword: req.query.keyword as string,
                 page: isNaN(Number(req.query.page)) ? 1 : Number(req.query.page),
                 limit: isNaN(Number(req.query.limit)) ? 10 : Number(req.query.limit),
-                paginate: req.query.paginate === "true"
+                paginate: req.query.paginate === "true",
+                status: req.query.status as string
             };
 
 

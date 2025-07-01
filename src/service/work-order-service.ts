@@ -192,6 +192,14 @@ export class WorkOrderService {
             });
         }
 
+        if (searchRequest.status) {
+            filters.push({
+                status: {
+                    equals: searchRequest.status
+                }
+            });
+        }
+
         const whereClause = filters.length > 0 ? { AND: filters } : {};
 
         // Default pagination values if not provided
@@ -301,7 +309,8 @@ export class WorkOrderService {
                                                 description: true,
                                                 rack: {
                                                     select: {
-                                                        device_id: true,       // ganti dengan nama kolom di DB
+                                                        device_id: true,
+                                                        code: true
                                                     },
                                                 },
                                             },
