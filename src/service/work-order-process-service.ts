@@ -122,7 +122,7 @@ export class WorkOrderProcessService {
             return;
         }
 
-        sendNotification(wo.code, { productId: product.id, kanbanCode: kanban.kanban_code });
+        sendNotification(wo.code, { productName: product.name, kanbanDescription: kanban.kanban_description, totalQuantity: kanban.total_quantity });
 
         // advance index
         if (++wo.currentKanbanIndex >= product.product_kanbans.length) {

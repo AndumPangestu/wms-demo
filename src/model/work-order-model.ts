@@ -32,6 +32,8 @@ export type SearchWorkOrderRequest = {
 type ProductKanban = {
     id: number;
     kanban_code: string;
+    kanban_description: string | null;
+    total_quantity: number;
     kanban_rack_device_id: number | null;
 }
 
@@ -63,6 +65,7 @@ export function toWorkOrderResponse(WorkOrder: any): WorkOrderResponse {
 export function toWorkOrderProcessRequest(wo: {
     code: string;
     work_order_products: {
+        quantity: number; // qty per produk di WO
         product: {
             id: number;
             name: string;
@@ -70,25 +73,34 @@ export function toWorkOrderProcessRequest(wo: {
                 kanban: {
                     id: number;
                     code: string;
+                    description: string | null;
                     rack: { device_id: number | null } | null;
                 };
+                quantity: number; // qty per kanban
             }[];
         };
     }[];
 }): WorkOrderProcessRequest {
     return {
         code: wo.code,
-        products: wo.work_order_products.map(({ product }) => ({
-            id: product.id,
-            name: product.name,
-            product_kanbans: product.product_kanbans.map(({ kanban }) => ({
-                id: kanban.id,
-                kanban_code: kanban.code,
-                kanban_rack_device_id: kanban.rack?.device_id!, // ← sesuaikan jika null diizinkan
-            })),
-        })),
+        products: wo.work_order_products.map(
+            ({ quantity: woProductQty, product }) => ({
+                id: product.id,
+                name: product.name,
+                product_kanbans: product.product_kanbans.map(
+                    ({ kanban, quantity: kanbanQty }) => ({
+                        id: kanban.id,
+                        kanban_code: kanban.code,
+                        kanban_description: kanban.description,
+                        total_quantity: woProductQty * kanbanQty,
+                        kanban_rack_device_id: kanban.rack?.device_id ?? null,
+                    })
+                ),
+            })
+        ),
     };
 }
+
 
 export function toWorkOrderDetailResponse(WorkOrder: any) {
     return {

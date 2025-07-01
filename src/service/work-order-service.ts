@@ -298,6 +298,7 @@ export class WorkOrderService {
                                             select: {
                                                 id: true,
                                                 code: true,
+                                                description: true,
                                                 rack: {
                                                     select: {
                                                         device_id: true,       // ganti dengan nama kolom di DB
@@ -305,10 +306,12 @@ export class WorkOrderService {
                                                 },
                                             },
                                         },
+                                        quantity: true,
                                     },
                                 },
                             },
                         },
+                        quantity: true,
                     },
                 },
             },
