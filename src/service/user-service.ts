@@ -36,6 +36,7 @@ export class UserService {
         const token = jwt.sign(
             {
                 userId: user.id,
+                userName: user.name
             },
             JWT_SECRET_KEY,
             {

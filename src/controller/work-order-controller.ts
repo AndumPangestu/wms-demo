@@ -84,10 +84,11 @@ export class WorkOrderController {
         }
     }
 
-    static async startWorkOrderProcess(req: Request, res: Response, next: NextFunction) {
+    static async startWorkOrderProcess(req: UserRequest, res: Response, next: NextFunction) {
         try {
             const id: number = Number(req.params.id);
-            const response = await WorkOrderService.startWorkOrderProcess(id);
+            const userName = req.userName;
+            const response = await WorkOrderService.startWorkOrderProcess(id, userName as string);
             sendSuccess(res, 200, "Start work order process success", response);
         } catch (e) {
             next(e);

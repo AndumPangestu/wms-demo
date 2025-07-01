@@ -280,7 +280,7 @@ export class WorkOrderService {
         return toWorkOrderDetailResponse(workOrder);
     }
 
-    static async startWorkOrderProcess(id: number) {
+    static async startWorkOrderProcess(id: number, userName: string) {
 
         const workOrder = await prismaClient.workOrder.findUnique({
             where: { id },
@@ -324,7 +324,7 @@ export class WorkOrderService {
 
         const workOrderProcessRequest = toWorkOrderProcessRequest(workOrder);
 
-        await WorkOrderProcessService.instance.startProcessingWorkOrder(workOrderProcessRequest);
+        await WorkOrderProcessService.instance.startProcessingWorkOrder(workOrderProcessRequest, userName);
 
     }
 

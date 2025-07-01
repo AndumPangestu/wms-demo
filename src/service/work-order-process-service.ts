@@ -5,6 +5,7 @@ import { logger } from "../application/logging";
 import { ResponseError } from "../error/response-error";
 import { LampService } from './lamp-service';
 import { sendNotification } from "../application/websocket";
+import { PrinterService } from './printer-service';
 
 type QueueItem = {
     code: string;
@@ -12,6 +13,7 @@ type QueueItem = {
     currentProductIndex: number;
     currentKanbanIndex: number;
     color: string;
+    pickerName: string
 };
 
 export class WorkOrderProcessService {
@@ -26,7 +28,7 @@ export class WorkOrderProcessService {
 
     private constructor() { }
 
-    async startProcessingWorkOrder(req: WorkOrderProcessRequest) {
+    async startProcessingWorkOrder(req: WorkOrderProcessRequest, userName: string) {
         if (this.processingQueue.has(req.code)) {
             throw new ResponseError(400, "Work order already processing");
         };
@@ -47,7 +49,8 @@ export class WorkOrderProcessService {
             products: req.products,
             currentProductIndex: 0,
             currentKanbanIndex: 0,
-            color: color
+            color: color,
+            pickerName: userName
         });
 
 
@@ -83,6 +86,8 @@ export class WorkOrderProcessService {
                 }
             })
             sendNotification(code, { status: "finished" });
+            PrinterService.print(wo.pickerName, code);
+
             return;
         }
 

@@ -2,5 +2,6 @@ import { Request } from "express";
 import { User } from "@prisma/client";
 
 export interface UserRequest extends Request {
-    userId?: number | undefined
+    userId?: number | undefined,
+    userName?: string | undefined
 }
