@@ -10,6 +10,8 @@ import { Workbook } from "exceljs"
 import path from 'path';
 import { convertToReadableDate } from "../helper/readable-date-helper";
 import { LampService } from "./lamp-service";
+import { Prisma } from '@prisma/client';
+
 
 
 export class StockInService {
@@ -19,20 +21,29 @@ export class StockInService {
 
         return await prismaClient.$transaction(async (prisma) => {
 
-            const isOperatorExist = await prisma.user.findFirst({
-                where: {
-                    id: createRequest.operator_id
-                }
-            });
-
-            if (!isOperatorExist) {
-                throw new ResponseError(404, "Operator not found");
+            type KanbanRow = {
+                id: number
+                stock_in_quantity: number
+                balance: number
+                incoming_order_stock: number
+                device_id: number | null
             }
 
             // Lock baris kanban berdasarkan code
-            const kanbanRows = await prisma.$queryRaw<
-                Array<{ id: string, stock_in_quantity: number, balance: number, incoming_order_stock: number }>
-            >`SELECT id, stock_in_quantity, incoming_order_stock, balance FROM kanbans WHERE code = ${createRequest.kanban_code} FOR UPDATE`;
+            const kanbanRows = await prisma.$queryRaw<KanbanRow[]>(
+                Prisma.sql`
+                        SELECT
+                        k.id,
+                        k.stock_in_quantity,
+                        k.incoming_order_stock,
+                        k.balance,
+                        r.device_id
+                        FROM kanbans AS k
+                        LEFT JOIN racks AS r ON r.id = k.rack_id
+                        WHERE k.code = ${createRequest.kanban_code}
+                        FOR UPDATE
+                    `
+            );
 
             if (kanbanRows.length === 0) {
                 throw new ResponseError(404, "Kanban not found");
@@ -42,11 +53,30 @@ export class StockInService {
 
 
             if (kanbanData.stock_in_quantity <= 0) {
+                if (kanbanData.device_id !== null) {
+                    await LampService.turnOffLamp(kanbanData.device_id);
+                }
                 throw new ResponseError(400, "Receiving report file is not uploaded");
             }
 
             if (kanbanData.incoming_order_stock < kanbanData.stock_in_quantity) {
+                if (kanbanData.device_id !== null) {
+                    await LampService.turnOffLamp(kanbanData.device_id);
+                }
                 throw new ResponseError(400, "stock in quantity less than incoming order stock");
+            }
+
+            const isOperatorExist = await prisma.user.findFirst({
+                where: {
+                    id: createRequest.operator_id
+                }
+            });
+
+            if (!isOperatorExist) {
+                if (kanbanData.device_id !== null) {
+                    await LampService.turnOffLamp(kanbanData.device_id);
+                }
+                throw new ResponseError(404, "Operator not found");
             }
 
             // Create stock-in
