@@ -416,7 +416,7 @@ export class WorkOrderService {
     }
 
     static async webhookWorkOrderProcess(req: WebhookRequest) {
-        sendNotification("stock-in", req.sliD_Activated);
+        sendNotification("stock-in", { device_id: req.sliD_Activated });
         WorkOrderProcessService.instance.webhookWorkOrderProcess(req);
     }
 }
