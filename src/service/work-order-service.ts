@@ -9,6 +9,7 @@ import { Pageable } from "../model/page";
 import { WebhookRequest } from "../model/webhook-model";
 import { WorkOrderProcessService } from "./work-order-process-service";
 import WebSocket from "ws";
+import { sendNotification } from "../application/websocket";
 
 
 export class WorkOrderService {
@@ -414,13 +415,9 @@ export class WorkOrderService {
         });
     }
 
-
     static async webhookWorkOrderProcess(req: WebhookRequest) {
-        await WorkOrderProcessService.instance.webhookWorkOrderProcess(req);
+        sendNotification("stock-in", req.sliD_Activated);
+        WorkOrderProcessService.instance.webhookWorkOrderProcess(req);
     }
-
-
-
 }
-
 
