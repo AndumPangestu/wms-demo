@@ -118,7 +118,7 @@ export class WorkOrderProcessService {
         this.activeDevice.set(kanban.kanban_rack_device_id, code);
 
         try {
-            await LampService.turnOnLamp(kanban.kanban_rack_device_id, wo.color);
+            await LampService.turnOnLamp(kanban.kanban_rack_device_id, wo.color, kanban.total_quantity);
 
         } catch (e) {
             console.error(`Turn-on failed: ${e}`);
