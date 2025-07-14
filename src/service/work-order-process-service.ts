@@ -145,6 +145,8 @@ export class WorkOrderProcessService {
             return
         };
 
+        setTimeout(() => { }, 4000);
+
         try {
             await LampService.turnOffLamp(deviceId);
         } finally {
