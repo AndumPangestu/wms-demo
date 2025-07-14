@@ -1,9 +1,9 @@
 import WebSocket from "ws";
 import { logger } from "./logging";
+import { WS_PORT } from "./config";
 
-
-const PORT = 3001;
-const wss = new WebSocket.Server({ port: PORT });
+const port = parseInt(WS_PORT as string, 10) || 3001;
+const wss = new WebSocket.Server({ port: port });
 
 
 interface ExtWebSocket extends WebSocket {
