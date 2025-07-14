@@ -144,8 +144,9 @@ export class WorkOrderProcessService {
             console.log("Device not found");
             return
         };
-
-        await new Promise(resolve => setTimeout(resolve, 4000));
+        if (deviceId === 1 || deviceId === 2 || deviceId === 3) {
+            await new Promise(resolve => setTimeout(resolve, 3000));
+        }
 
         try {
             await LampService.turnOffLamp(deviceId);
