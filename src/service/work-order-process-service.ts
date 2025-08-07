@@ -1,160 +1,207 @@
-import { WorkOrderProcessRequest, Product } from './../model/work-order-model';
-import { WebhookRequest } from '../model/webhook-model';
+import { WorkOrderProcessRequest, Product } from "./../model/work-order-model";
+import { WebhookRequest } from "../model/webhook-model";
 import { prismaClient } from "../application/database";
 import { logger } from "../application/logging";
 import { ResponseError } from "../error/response-error";
-import { LampService } from './lamp-service';
+import { LampService } from "./lamp-service";
 import { sendNotification } from "../application/websocket";
-import { PrinterService } from './printer-service';
-import { send } from 'process';
+import { PrinterService } from "./printer-service";
+import { send } from "process";
+import { StockOutService } from "./stock-out-service";
 
 type QueueItem = {
-    code: string;
-    products: Product[];
-    currentProductIndex: number;
-    currentKanbanIndex: number;
-    color: string;
-    pickerName: string
+  code: string;
+  products: Product[];
+  currentProductIndex: number;
+  currentKanbanIndex: number;
+  color: string;
+  pickerName: string;
+  pickerId?: number;
 };
 
 export class WorkOrderProcessService {
-    private static _instance: WorkOrderProcessService;
-    static get instance() {
-        return this._instance ??= new WorkOrderProcessService();
+  private static _instance: WorkOrderProcessService;
+  static get instance() {
+    return (this._instance ??= new WorkOrderProcessService());
+  }
+
+  private processingQueue = new Map<string, QueueItem>();
+  private activeDevice = new Map<number, string>();
+  private colors = [
+    "yellow",
+    "blue",
+    "magenta",
+    "cyan",
+    "white",
+    "amber",
+    "rose",
+    "orange",
+  ];
+
+  private constructor() {}
+
+  async startProcessingWorkOrder(
+    req: WorkOrderProcessRequest,
+    userName: string,
+    userId?: number
+  ) {
+    if (this.processingQueue.has(req.code)) {
+      throw new ResponseError(400, "Work order already processing");
     }
 
-    private processingQueue = new Map<string, QueueItem>();
-    private activeDevice = new Map<number, string>();
-    private colors = ["yellow", "blue", "magenta", "cyan", "white", "amber", "rose", "orange",];
-
-    private constructor() { }
-
-    async startProcessingWorkOrder(req: WorkOrderProcessRequest, userName: string) {
-        if (this.processingQueue.has(req.code)) {
-            throw new ResponseError(400, "Work order already processing");
-        };
-
-        if (req.products.length === 0) {
-            throw new ResponseError(400, "Products is empty");
-        };
-
-        if (this.colors.length === 0) {
-            throw new ResponseError(400, "Processing queue is full");
-        }
-
-        const color = this.colors[Math.floor(Math.random() * this.colors.length)];
-        this.colors.splice(this.colors.indexOf(color), 1);
-
-        this.processingQueue.set(req.code, {
-            code: req.code,
-            products: req.products,
-            currentProductIndex: 0,
-            currentKanbanIndex: 0,
-            color: color,
-            pickerName: userName
-        });
-
-
-        await prismaClient.workOrder.update({
-            where: {
-                code: req.code
-            },
-            data: {
-                status: "processing"
-            }
-        })
-
-
-        // kick-off pertama
-        return this.processWorkOrder(req.code);
+    if (req.products.length === 0) {
+      throw new ResponseError(400, "Products is empty");
     }
 
-    private async processWorkOrder(code: string): Promise<void> {
-
-        const wo = this.processingQueue.get(code);
-        if (!wo) return;
-
-        // selesai
-        if (wo.currentProductIndex >= wo.products.length) {
-            this.colors.push(wo.color);
-            this.processingQueue.delete(code);
-            await prismaClient.workOrder.update({
-                where: {
-                    code: code
-                },
-                data: {
-                    status: "finished"
-                }
-            })
-            sendNotification(code, { status: "finished" });
-            PrinterService.print(wo.pickerName, code);
-
-            return;
-        }
-
-        const product = wo.products[wo.currentProductIndex];
-        if (!product || product.product_kanbans.length === 0) {
-            wo.currentProductIndex++;
-            wo.currentKanbanIndex = 0;
-            return this.processWorkOrder(code);
-        }
-
-        const kanban = product.product_kanbans[wo.currentKanbanIndex];
-
-        if (!kanban.kanban_rack_device_id) {
-            console.log("Kanban rack device ID is null");
-            return;
-        }
-
-        // device sedang dipakai oleh WO lain
-        if (this.activeDevice.has(kanban.kanban_rack_device_id) &&
-            this.activeDevice.get(kanban.kanban_rack_device_id) !== code) {
-            console.log("Device already in use. waiting...");
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            return this.processWorkOrder(code);
-        }
-
-        // book device LEBIH DULU
-        this.activeDevice.set(kanban.kanban_rack_device_id, code);
-
-        try {
-            await LampService.turnOnLamp(kanban.kanban_rack_device_id, wo.color, kanban.total_quantity);
-
-        } catch (e) {
-            console.error(`Turn-on failed: ${e}`);
-            this.activeDevice.delete(kanban.kanban_rack_device_id);
-            return;
-        }
-
-        sendNotification(wo.code, { productName: product.name, kanbanDescription: kanban.kanban_description, totalQuantity: kanban.total_quantity, rackCode: kanban.kanban_rack_code });
-
-        // advance index
-        if (++wo.currentKanbanIndex >= product.product_kanbans.length) {
-            wo.currentProductIndex++;
-            wo.currentKanbanIndex = 0;
-        }
+    if (this.colors.length === 0) {
+      throw new ResponseError(400, "Processing queue is full");
     }
 
-    async webhookWorkOrderProcess(req: WebhookRequest) {
-        console.log("Webhook Work Order Process");
-        const deviceId = req.sliD_Activated;
-        const code = this.activeDevice.get(deviceId);
-        if (!code) {
-            this.processingQueue.forEach(wo => sendNotification(wo.code, { status: "failed" }));
-            console.log("Device not found");
-            return
-        };
-        if (deviceId === 1 || deviceId === 2 || deviceId === 3) {
-            await new Promise(resolve => setTimeout(resolve, 3000));
-        }
+    const color = this.colors[Math.floor(Math.random() * this.colors.length)];
+    this.colors.splice(this.colors.indexOf(color), 1);
 
-        try {
-            await LampService.turnOffLamp(deviceId);
-        } finally {
-            this.activeDevice.delete(deviceId);
-            return this.processWorkOrder(code);
-        }
+    this.processingQueue.set(req.code, {
+      code: req.code,
+      products: req.products,
+      currentProductIndex: 0,
+      currentKanbanIndex: 0,
+      color: color,
+      pickerName: userName,
+      pickerId: userId,
+    });
+
+    await prismaClient.workOrder.update({
+      where: {
+        code: req.code,
+      },
+      data: {
+        status: "processing",
+      },
+    });
+
+    // kick-off pertama
+    return this.processWorkOrder(req.code);
+  }
+
+  private async processWorkOrder(code: string): Promise<void> {
+    const wo = this.processingQueue.get(code);
+    if (!wo) return;
+
+    // selesai
+    if (wo.currentProductIndex >= wo.products.length) {
+      this.colors.push(wo.color);
+      this.processingQueue.delete(code);
+      await prismaClient.workOrder.update({
+        where: {
+          code: code,
+        },
+        data: {
+          status: "finished",
+        },
+      });
+      sendNotification(code, { status: "finished" });
+      PrinterService.print(wo.pickerName, code);
+
+      return;
     }
+
+    const product = wo.products[wo.currentProductIndex];
+    if (!product || product.product_kanbans.length === 0) {
+      wo.currentProductIndex++;
+      wo.currentKanbanIndex = 0;
+      return this.processWorkOrder(code);
+    }
+
+    const kanban = product.product_kanbans[wo.currentKanbanIndex];
+
+    if (!kanban.kanban_rack_device_id) {
+      console.log("Kanban rack device ID is null");
+      return;
+    }
+
+    // device sedang dipakai oleh WO lain
+    if (
+      this.activeDevice.has(kanban.kanban_rack_device_id) &&
+      this.activeDevice.get(kanban.kanban_rack_device_id) !== code
+    ) {
+      console.log("Device already in use. waiting...");
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      return this.processWorkOrder(code);
+    }
+
+    // book device LEBIH DULU
+    this.activeDevice.set(kanban.kanban_rack_device_id, code);
+
+    try {
+      await LampService.turnOnLamp(
+        kanban.kanban_rack_device_id,
+        wo.color,
+        kanban.total_quantity
+      );
+    } catch (e) {
+      console.error(`Turn-on failed: ${e}`);
+      this.activeDevice.delete(kanban.kanban_rack_device_id);
+      return;
+    }
+
+    sendNotification(wo.code, {
+      productName: product.name,
+      kanbanDescription: kanban.kanban_description,
+      totalQuantity: kanban.total_quantity,
+      rackCode: kanban.kanban_rack_code,
+    });
+
+    // advance index
+    if (++wo.currentKanbanIndex >= product.product_kanbans.length) {
+      wo.currentProductIndex++;
+      wo.currentKanbanIndex = 0;
+    }
+  }
+
+  async webhookWorkOrderProcess(req: WebhookRequest) {
+    console.log("Webhook Work Order Process");
+    const deviceId = req.sliD_Activated;
+    const code = this.activeDevice.get(deviceId);
+    if (!code) {
+      this.processingQueue.forEach((wo) =>
+        sendNotification(wo.code, { status: "failed" })
+      );
+      console.log("Device not found");
+      return;
+    }
+
+    try {
+      await LampService.turnOffLamp(deviceId);
+    } finally {
+      this.activeDevice.delete(deviceId);
+      const wo = this.processingQueue.get(code);
+      if (!wo) return;
+
+      const productIndex: number =
+        wo.currentKanbanIndex === 0
+          ? wo.currentProductIndex - 1
+          : wo.currentProductIndex;
+      const kanbanIndex: number =
+        productIndex === wo.currentProductIndex
+          ? wo.currentKanbanIndex - 1
+          : wo.products[productIndex].product_kanbans.length - 1;
+
+      const kanban = wo.products[productIndex].product_kanbans[kanbanIndex];
+
+      if (!kanban) {
+        console.log("Kanban not found in work order");
+        return;
+      }
+
+      await StockOutService.create({
+        kanban_code: kanban.kanban_code,
+        quantity: kanban.total_quantity,
+        operator_id: wo.pickerId,
+      });
+
+      return this.processWorkOrder(code);
+    }
+  }
 }
 
 // pakai:
