@@ -9,3 +9,4 @@ export const DATABASE_URL = process.env.DATABASE_URL as string;
 export const NODE_ENV = process.env.NODE_ENV as string;
 export const SHARED_FOLDER_PATH = process.env.SHARED_FOLDER_PATH as string;
 export const WS_PORT = process.env.WS_PORT;
+export const DEVICE_URL = process.env.DEVICE_URL as string;
