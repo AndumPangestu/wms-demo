@@ -11,16 +11,12 @@ export class ResetService {
           incoming_order_stock: 0,
         },
       }),
-      await prismaClient.$executeRawUnsafe(`TRUNCATE TABLE processed_files`),
-      await prismaClient.$executeRawUnsafe(`TRUNCATE TABLE purchase_orders`),
-      await prismaClient.$executeRawUnsafe(`TRUNCATE TABLE purchase_requests`),
-      await prismaClient.$executeRawUnsafe(`TRUNCATE TABLE receiving_reports`),
-      await prismaClient.$executeRawUnsafe(`TRUNCATE TABLE stock_ins`),
-      await prismaClient.$executeRawUnsafe(`TRUNCATE TABLE stock_outs`),
-      await prismaClient.$executeRawUnsafe(`TRUNCATE TABLE work_orders`),
-      await prismaClient.$executeRawUnsafe(
-        `TRUNCATE TABLE work_order_products`
-      ),
+      prismaClient.receivingReport.deleteMany(),
+      prismaClient.processedFile.deleteMany(),
+      prismaClient.purchaseOrder.deleteMany(),
+      prismaClient.purchaseRequest.deleteMany(),
+      prismaClient.stockIn.deleteMany(),
+      prismaClient.stockOut.deleteMany(),
     ]);
 
     return true;
