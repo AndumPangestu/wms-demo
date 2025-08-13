@@ -115,8 +115,11 @@ export class WorkOrderService {
         }
 
         relatedKanbans.forEach((pk) => {
-          if (pk.kanban.balance < woProduct.quantity) {
-            insufficientKanbans.push(pk.kanban.code);
+          const requiredKanbanQty = woProduct.quantity * pk.quantity; // 🔹 perhitungan kebutuhan
+          if (pk.kanban.balance < requiredKanbanQty) {
+            insufficientKanbans.push(
+              `${pk.kanban.code} (need ${requiredKanbanQty}, have ${pk.kanban.balance})`
+            );
           }
         });
       }
