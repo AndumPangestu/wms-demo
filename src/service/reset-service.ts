@@ -17,6 +17,7 @@ export class ResetService {
       prismaClient.purchaseRequest.deleteMany(),
       prismaClient.stockIn.deleteMany(),
       prismaClient.stockOut.deleteMany(),
+      prismaClient.workOrder.deleteMany(),
     ]);
 
     return true;
