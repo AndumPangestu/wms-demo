@@ -79,31 +79,67 @@ export class WorkOrderService {
       const code = await this.generateWorkOrderCode();
 
       const isCodeExist = await tx.workOrder.findFirst({
-        where: {
-          code: code,
-        },
+        where: { code },
       });
 
       if (isCodeExist) {
         throw new ResponseError(400, "Code already exists");
       }
 
-      // Buat workOrder baru
-      const workOrder = await tx.workOrder.create({
-        data: {
-          code: code,
-          ppic_id: userId,
-        },
-        include: {
-          ppic: true,
-        },
-      });
-
       if (createRequest.work_order_products.length === 0) {
         throw new ResponseError(400, "Work Order products cannot be empty");
       }
 
-      // Siapkan data relasi workOrder-kanban
+      // ====== 🔍 CEK STOK KANBAN ======
+      const productIds = createRequest.work_order_products.map(
+        (p) => p.product_id
+      );
+
+      const productKanbans = await tx.productKanban.findMany({
+        where: { product_id: { in: productIds } },
+        include: { kanban: true },
+      });
+
+      const insufficientKanbans: string[] = [];
+
+      for (const woProduct of createRequest.work_order_products) {
+        const relatedKanbans = productKanbans.filter(
+          (pk) => pk.product_id === woProduct.product_id
+        );
+
+        if (relatedKanbans.length === 0) {
+          insufficientKanbans.push(
+            `(No Kanban for product_id: ${woProduct.product_id})`
+          );
+          continue;
+        }
+
+        relatedKanbans.forEach((pk) => {
+          if (pk.kanban.balance < woProduct.quantity) {
+            insufficientKanbans.push(pk.kanban.code);
+          }
+        });
+      }
+
+      if (insufficientKanbans.length > 0) {
+        throw new ResponseError(
+          400,
+          `Stock not sufficient for kanbans: ${[
+            ...new Set(insufficientKanbans),
+          ].join(", ")}`
+        );
+      }
+
+      // ====== 📌 CREATE WORK ORDER ======
+      const workOrder = await tx.workOrder.create({
+        data: {
+          code,
+          ppic_id: userId,
+        },
+        include: { ppic: true },
+      });
+
+      // ====== 📌 CREATE WORK ORDER PRODUCTS ======
       const workOrderProductRequest = createRequest.work_order_products.map(
         (workOrderProduct) => ({
           work_order_id: workOrder.id,
@@ -112,7 +148,6 @@ export class WorkOrderService {
         })
       );
 
-      // Buat relasi workOrder-kanban
       await tx.workOrderProduct.createMany({
         data: workOrderProductRequest,
       });
