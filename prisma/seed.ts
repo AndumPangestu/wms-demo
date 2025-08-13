@@ -41,15 +41,15 @@ async function main() {
     ],
   });
 
-  await seedSuppliers();
-  await seedMakers();
-  await seedAreas();
-  await seedMachines();
+  // await seedSuppliers();
+  // await seedMakers();
+  // await seedAreas();
+  // await seedMachines();
   await seedRacks();
-  await seedKanbans1();
-  await seedKanbans2();
-  await seedKanbans3();
-  await seedKanbans4();
+  // await seedKanbans1();
+  // await seedKanbans2();
+  // await seedKanbans3();
+  // await seedKanbans4();
 }
 
 main()
