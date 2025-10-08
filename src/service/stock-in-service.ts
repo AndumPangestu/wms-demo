@@ -109,8 +109,8 @@ export class StockInService {
           where: { id: Number(kanbanData.id) },
           data: {
             balance: { increment: kanbanData.stock_in_quantity },
-            stock_in_quantity: 0,
-            incoming_order_stock: { decrement: kanbanData.stock_in_quantity },
+            // stock_in_quantity: 0,
+            // incoming_order_stock: { decrement: kanbanData.stock_in_quantity },
           },
         });
 
